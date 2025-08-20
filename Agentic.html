@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Onboarding Agent POC</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Use the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for the thought process log */
+        .thought-log-item {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.5s forwards;
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Custom styles for the task list checkmark */
+        .task-item svg {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s ease-in-out;
+        }
+        .task-item.completed svg {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .task-item.completed span {
+            text-decoration: line-through;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl mx-auto">
+
+        <!-- Step 1: Initiation Form -->
+        <section id="initiationSection" class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl transition-opacity duration-500">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold text-white">Autonomous Employee Onboarding</h1>
+                <p class="mt-2 text-slate-400">Enter the new hire's details to begin the automated process.</p>
+            </div>
+            <form id="onboardingForm" class="mt-8 max-w-lg mx-auto">
+                <div class="space-y-6">
+                    <div>
+                        <label for="newHireName" class="block text-sm font-medium text-slate-300 mb-2">New Hire Name</label>
+                        <input type="text" id="newHireName" value="Jane Doe" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label for="role" class="block text-sm font-medium text-slate-300 mb-2">Role</label>
+                        <input type="text" id="role" value="Senior Financial Analyst" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label for="startDate" class="block text-sm font-medium text-slate-300 mb-2">Start Date</label>
+                        <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-500/50">
+                        Initiate Onboarding
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Step 2: Agent Dashboard (Initially Hidden) -->
+        <section id="dashboardSection" class="hidden bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl transition-opacity duration-500">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl md:text-3xl font-bold">Onboarding in Progress for <span id="displayName" class="text-indigo-400"></span></h2>
+                <div class="mt-4 w-full bg-slate-700 rounded-full h-2.5">
+                    <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Thought Process Log -->
+                <div class="bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <h3 class="font-semibold text-lg mb-4">Agent Thought Process</h3>
+                    <ul id="thoughtLog" class="space-y-3 text-sm text-slate-400 h-64 overflow-y-auto pr-2">
+                        <!-- JS will populate this -->
+                    </ul>
+                </div>
+                <!-- Task Status Checklist -->
+                <div class="bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <h3 class="font-semibold text-lg mb-4">Task Status</h3>
+                    <ul id="taskList" class="space-y-4">
+                        <!-- JS will populate this -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 3: Completion Notification (Initially Hidden) -->
+        <section id="completionSection" class="hidden max-w-md mx-auto transition-opacity duration-500">
+            <div class="bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-700">
+                <div class="flex items-start space-x-4">
+                    <div class="bg-indigo-600 rounded-full p-2">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="font-bold text-white">Onboarding AI Bot <span class="text-xs font-normal text-slate-400 ml-2">9:34 AM</span></p>
+                        <div class="mt-2 bg-slate-700 p-4 rounded-lg">
+                            <p class="font-semibold text-lg text-white"><span id="completionName"></span>'s onboarding is complete!</p>
+                            <p class="text-slate-300 mt-2">The new hire is fully provisioned and ready for Day 1.</p>
+                            <ul id="completionSummary" class="mt-4 space-y-2 text-sm list-disc list-inside text-slate-300">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+                         <button id="resetButton" class="mt-6 w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg transition">Start New Onboarding</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const initiationSection = document.getElementById('initiationSection');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const completionSection = document.getElementById('completionSection');
+        const onboardingForm = document.getElementById('onboardingForm');
+        const displayName = document.getElementById('displayName');
+        const completionName = document.getElementById('completionName');
+        const progressBar = document.getElementById('progressBar');
+        const thoughtLog = document.getElementById('thoughtLog');
+        const taskList = document.getElementById('taskList');
+        const completionSummary = document.getElementById('completionSummary');
+        const resetButton = document.getElementById('resetButton');
+
+        // Initial Data
+        const initialTasks = [
+            { id: 'task1', text: 'Retrieve hardware policy for role' },
+            { id: 'task2', text: 'Create HR record in Workday' },
+            { id: 'task3', text: 'Create IT user account (Okta)' },
+            { id: 'task4', text: 'Order hardware (Dell Latitude 9440)' },
+            { id: 'task5', text: 'Set up payroll in ADP' },
+            { id: 'task6', text: 'Add to "Q3 Financials" project board' }
+        ];
+
+        // --- UTILITY FUNCTIONS ---
+
+        /**
+         * Simulates a delay.
+         * @param {number} ms - Milliseconds to wait.
+         * @returns {Promise}
+         */
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        /**
+         * Adds a new entry to the thought log with a fade-in animation.
+         * @param {string} text - The thought text to add.
+         */
+        function addThought(text) {
+            const li = document.createElement('li');
+            li.className = 'flex items-start space-x-2 thought-log-item';
+            li.innerHTML = `
+                <svg class="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>${text}</span>
+            `;
+            thoughtLog.appendChild(li);
+            thoughtLog.scrollTop = thoughtLog.scrollHeight; // Auto-scroll
+        }
+
+        /**
+         * Marks a task as complete in the UI.
+         * @param {string} taskId - The ID of the task to complete.
+         */
+        function completeTask(taskId) {
+            const taskItem = document.getElementById(taskId);
+            if (taskItem) {
+                taskItem.classList.add('completed');
+            }
+        }
+
+        /**
+         * Updates the progress bar.
+         * @param {number} percentage - The new percentage (0-100).
+         */
+        function updateProgress(percentage) {
+            progressBar.style.width = `${percentage}%`;
+        }
+        
+        /**
+         * Populates the initial task list in the UI.
+         */
+        function populateTasks() {
+            taskList.innerHTML = ''; // Clear existing tasks
+            initialTasks.forEach(task => {
+                const li = document.createElement('li');
+                li.id = task.id;
+                li.className = 'task-item flex items-center space-x-3 transition-all duration-300';
+                li.innerHTML = `
+                    <!-- Checkmark Icon -->
+                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-slate-300">${task.text}</span>
+                `;
+                taskList.appendChild(li);
+            });
+        }
+
+
+        // --- MAIN WORKFLOW ---
+
+        /**
+         * Runs the simulated onboarding process.
+         * @param {string} name - The new hire's name.
+         * @param {string} role - The new hire's role.
+         */
+        async function runOnboardingProcess(name, role) {
+            // Reset UI elements for a new run
+            thoughtLog.innerHTML = '';
+            populateTasks();
+            updateProgress(0);
+
+            // Step 1: Initial Analysis
+            await sleep(500);
+            addThought(`Initiating onboarding for <strong>${name}</strong> (Role: ${role}).`);
+            updateProgress(10);
+            await sleep(1500);
+
+            // Step 2: RAG - Retrieve Policy
+            addThought(`Querying knowledge base for hardware policy related to "${role}".`);
+            await sleep(2000);
+            addThought(`Policy found: Standard hardware is "Dell Latitude 9440".`);
+            completeTask('task1');
+            updateProgress(25);
+            await sleep(1000);
+
+            // Step 3: HR System
+            addThought(`Calling HR API (mock): <strong>CreateHREmployee</strong>.`);
+            await sleep(1500);
+            addThought(`Success. Employee ID <strong>JD-83371</strong> created.`);
+            completeTask('task2');
+            updateProgress(40);
+            await sleep(1000);
+
+            // Step 4: Parallel IT & Finance Tasks
+            addThought(`Orchestrating parallel tasks: IT, Hardware, and Payroll.`);
+            await sleep(500);
+            
+            // These run "concurrently" in the simulation
+            const itTask = async () => {
+                await sleep(1500);
+                addThought(`Calling IT API (mock): <strong>CreateITUserAccount</strong>.`);
+                completeTask('task3');
+            };
+            const hardwareTask = async () => {
+                await sleep(2000);
+                addThought(`Calling Procurement API (mock): <strong>OrderHardware</strong>.`);
+                completeTask('task4');
+            };
+            const financeTask = async () => {
+                await sleep(2500);
+                addThought(`Calling Finance API (mock): <strong>SetupPayroll</strong>.`);
+                 completeTask('task5');
+            };
+            
+            await Promise.all([itTask(), hardwareTask(), financeTask()]);
+            updateProgress(80);
+            await sleep(1000);
+
+            // Step 5: Operations Task
+            addThought(`Calling Operations API (mock): <strong>AddToProjectTeam</strong>.`);
+            await sleep(1500);
+            addThought(`User <strong>j.doe@company.com</strong> added to project board.`);
+            completeTask('task6');
+            updateProgress(100);
+            await sleep(1000);
+            
+            // Step 6: Finalization
+            addThought(`All tasks completed successfully. Preparing notification.`);
+            await sleep(2000);
+
+            // Transition to completion view
+            dashboardSection.classList.add('opacity-0');
+            setTimeout(() => {
+                dashboardSection.classList.add('hidden');
+                completionSection.classList.remove('hidden');
+                completionSection.classList.remove('opacity-0');
+            }, 500);
+        }
+        
+        /**
+         * Populates the final completion summary.
+         */
+        function showCompletionSummary() {
+            completionSummary.innerHTML = `
+                <li>HR record created (ID: JD-83371)</li>
+                <li>IT account active (j.doe@company.com)</li>
+                <li>Dell Latitude 9440 has been shipped.</li>
+                <li>Added to the Q3 Financials project board.</li>
+            `;
+        }
+
+        // --- EVENT LISTENERS ---
+
+        onboardingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('newHireName').value;
+            const role = document.getElementById('role').value;
+
+            // Set dynamic names
+            displayName.textContent = name;
+            completionName.textContent = name;
+            showCompletionSummary();
+
+            // Hide form, show dashboard
+            initiationSection.classList.add('opacity-0');
+            setTimeout(() => {
+                initiationSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+                dashboardSection.classList.remove('opacity-0');
+                // Start the main process
+                runOnboardingProcess(name, role);
+            }, 500);
+        });
+        
+        resetButton.addEventListener('click', () => {
+            // Hide completion, show form
+            completionSection.classList.add('opacity-0');
+             setTimeout(() => {
+                completionSection.classList.add('hidden');
+                initiationSection.classList.remove('hidden');
+                initiationSection.classList.remove('opacity-0');
+                onboardingForm.reset();
+                // Set default date for next run
+                document.getElementById('startDate').valueAsDate = new Date();
+            }, 500);
+        });
+
+        // Set initial date value
+        document.getElementById('startDate').valueAsDate = new Date();
+        document.getElementById('initiationSection').classList.remove('opacity-0');
+
+    </script>
+</body>
+</html>
